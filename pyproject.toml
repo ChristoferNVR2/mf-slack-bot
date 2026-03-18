@@ -1,0 +1,15 @@
+[project]
+name = "mf-slack-bot"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.14"
+dependencies = [
+    "anthropic>=0.84.0",
+    "dotenv>=0.9.9",
+    "flask>=3.1.3",
+    "langchain>=1.2.12",
+    "langchain-anthropic>=1.3.5",
+    "langchain-community>=0.4.1",
+    "slack-bolt>=1.27.0",
+    "slack-sdk>=3.41.0",
+]
