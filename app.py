@@ -1,3 +1,4 @@
+import json
 import os
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -39,6 +40,36 @@ def handle_mentions(body, say):
     # response = ask_assistant(text)
     response = query_bedrock_api(text)
     say(blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": response}}], text=response)
+
+
+def ack_dm_message(ack):
+    ack()
+
+
+def process_dm_message(body, client, logger):
+    event = body.get("event", {})
+    if event.get("channel_type") != "im":
+        return
+    if event.get("subtype") or event.get("bot_id"):
+        return
+
+    query = event.get("text", "").strip()
+    if not query:
+        return
+
+    channel_id = event["channel"]
+    response = query_bedrock_api(query)
+    try:
+        client.chat_postMessage(
+            channel=channel_id,
+            blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": response}}],
+            text=response,
+        )
+    except SlackApiError as e:
+        logger.error(f"Error sending DM response: {e}")
+
+
+app.event("message")(ack=ack_dm_message, lazy=[process_dm_message])
 
 
 def ack_ask_privately(ack):
