@@ -6,7 +6,7 @@ from slack_bolt import App
 from dotenv import find_dotenv, load_dotenv
 from flask import Flask, request
 
-from functions import ask_assistant, query_bedrock_api
+from functions import query_bedrock_api
 
 load_dotenv(find_dotenv())
 
@@ -55,31 +55,6 @@ def process_dm_message(body, client, logger):
 
 
 app.event("message")(ack=ack_dm_message, lazy=[process_dm_message])
-
-
-def ack_ask_privately(ack):
-    ack()
-
-
-def process_ask_privately(body, client, respond, logger):
-    query = body.get("text", "").strip()
-    if not query:
-        respond(response_type="ephemeral", text="Please provide a question. Usage: `/ask-privately <your question>`")
-        return
-    user_id = body["user_id"]
-    response = query_bedrock_api(query)
-    try:
-        dm = client.conversations_open(users=user_id)
-        client.chat_postMessage(
-            channel=dm["channel"]["id"],
-            blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": response}}],
-            text=response,
-        )
-    except SlackApiError as e:
-        logger.error(f"Error sending private response: {e}")
-
-
-app.command("/ask-privately")(ack=ack_ask_privately, lazy=[process_ask_privately])
 
 
 @flask_app.route("/slack/events", methods=["POST"])

@@ -1,12 +1,11 @@
 # mf-slack-bot
 
-A Slack bot that answers questions by routing them to an AWS Bedrock API (or Claude directly as a fallback). It supports both channel mentions and a `/ask-privately` slash command that responds via DM.
+A Slack bot that answers questions by routing them to an AWS Bedrock API. Accessible exclusively via direct messages (DMs).
 
 ## Features
 
-- **`@mention`** — mention the bot in any channel to ask a question; it responds in the same channel.
-- **`/ask-privately`** — slash command that sends the response to your DMs, keeping the query private.
-- Powered by an **AWS Bedrock** API endpoint, with an optional **Anthropic Claude** fallback (`ask_assistant`).
+- **DM-only** — send the bot a direct message to ask a question; it replies in the same DM conversation.
+- Powered by an **AWS Bedrock** API endpoint.
 
 ## Tech stack
 
@@ -14,8 +13,56 @@ A Slack bot that answers questions by routing them to an AWS Bedrock API (or Cla
 |---|---|
 | Slack integration | `slack-bolt`, `slack-sdk` |
 | Web server | `Flask` |
-| AI backend | AWS Bedrock (via REST) + `anthropic` SDK |
+| AI backend | AWS Bedrock (via REST) |
 | Dependency management | `uv` |
+
+## Slack app setup (non-technical guide)
+
+Follow these steps to create and configure the Slack app before running the bot.
+
+### 1. Create the app
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App**.
+2. Choose **From scratch**, give it a name (e.g. `mf-slack-bot`), and select your workspace.
+
+### 2. Grant permissions
+
+1. In the left sidebar, go to **OAuth & Permissions**.
+2. Scroll down to **Bot Token Scopes** and add the following scopes:
+   - `chat:write` — allows the bot to send messages
+   - `im:history` — allows the bot to read DM history
+   - `im:read` — allows the bot to see DM conversations
+   - `im:write` — allows the bot to open DM conversations
+
+### 3. Enable event subscriptions
+
+1. In the left sidebar, go to **Event Subscriptions** and toggle it **On**.
+2. In the **Request URL** field, enter your server URL followed by `/slack/events` (e.g. `https://your-server.com/slack/events`). Slack will send a verification request — the bot must be running for this to succeed.
+3. Under **Subscribe to bot events**, click **Add Bot User Event** and add:
+   - `message.im` — triggers when someone sends the bot a DM
+
+### 4. Enable the Messages tab
+
+1. In the left sidebar, go to **App Home**.
+2. Scroll down to **Show Tabs** and turn on **Messages Tab** (it is off by default).
+
+This allows users to open a DM conversation with the bot directly from its profile.
+
+### 5. Install the app to your workspace
+
+1. In the left sidebar, go to **OAuth & Permissions**.
+2. Click **Install to Workspace** and authorize the app.
+3. Copy the **Bot User OAuth Token** (starts with `xoxb-`) — this is your `SLACK_BOT_TOKEN`.
+
+### 6. Collect your credentials
+
+| Where to find it | Used for |
+|---|---|
+| **OAuth & Permissions** → Bot User OAuth Token | `SLACK_BOT_TOKEN` |
+| **Basic Information** → Signing Secret | `SLACK_SIGNING_SECRET` |
+| **Basic Information** → App ID (or run `auth.test`) | `SLACK_BOT_USER_ID` |
+
+---
 
 ## Setup
 
@@ -24,11 +71,9 @@ A Slack bot that answers questions by routing them to an AWS Bedrock API (or Cla
 - Python 3.14+
 - [`uv`](https://github.com/astral-sh/uv) package manager
 - A Slack app with:
-  - **Bot token scopes:** `chat:write`, `im:write`, `commands`
-  - **Event subscriptions:** `app_mention`
-  - **Slash command:** `/ask-privately`
+  - **Bot token scopes:** `chat:write`, `im:history`, `im:read`, `im:write`
+  - **Event subscriptions:** `message.im`
 - An AWS Bedrock API endpoint (API Gateway URL)
-- An Anthropic API key (for the direct Claude fallback)
 
 ### 2. Install dependencies
 
@@ -49,7 +94,6 @@ cp .env.example .env
 | `SLACK_BOT_TOKEN` | Slack bot OAuth token (`xoxb-...`) |
 | `SLACK_SIGNING_SECRET` | Slack app signing secret |
 | `SLACK_BOT_USER_ID` | The bot's Slack user ID |
-| `ANTHROPIC_API_KEY` | Anthropic API key (for direct Claude calls) |
 | `BEDROCK_API_URL` | AWS API Gateway URL for your Bedrock endpoint |
 
 ### 4. Run the app
@@ -70,7 +114,6 @@ ngrok http 5000
 
 Then configure the Slack app with:
 - **Event subscription URL:** `https://<your-ngrok-url>/slack/events`
-- **Slash command URL:** `https://<your-ngrok-url>/slack/ask-privately`
 
 ## Project structure
 
