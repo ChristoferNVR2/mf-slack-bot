@@ -76,19 +76,22 @@ def ack_ask_privately(ack):
     ack()
 
 
-def process_ask_privately(body, client, respond):
+def process_ask_privately(body, client, respond, logger):
     query = body.get("text", "").strip()
     if not query:
         respond(response_type="ephemeral", text="Please provide a question. Usage: `/ask-privately <your question>`")
         return
     user_id = body["user_id"]
     response = query_bedrock_api(query)
-    dm = client.conversations_open(users=user_id)
-    client.chat_postMessage(
-        channel=dm["channel"]["id"],
-        blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": response}}],
-        text=response,
-    )
+    try:
+        dm = client.conversations_open(users=user_id)
+        client.chat_postMessage(
+            channel=dm["channel"]["id"],
+            blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": response}}],
+            text=response,
+        )
+    except SlackApiError as e:
+        logger.error(f"Error sending private response: {e}")
 
 
 app.command("/ask-privately")(ack=ack_ask_privately, lazy=[process_ask_privately])
