@@ -102,10 +102,5 @@ def slack_events():
     return handler.handle(request)
 
 
-@flask_app.route("/slack/ask-privately", methods=["POST"])
-def ask_privately():
-    return handler.handle(request)
-
-
 if __name__ == "__main__":
     flask_app.run()
