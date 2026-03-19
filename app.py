@@ -1,4 +1,3 @@
-import json
 import os
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -13,7 +12,6 @@ load_dotenv(find_dotenv())
 
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
-SLACK_BOT_USER_ID = os.environ["SLACK_BOT_USER_ID"]
 
 app = App(token=SLACK_BOT_TOKEN)
 flask_app = Flask(__name__)
@@ -27,19 +25,6 @@ def get_bot_user_id():
         return response["user_id"]
     except SlackApiError as e:
         print(f"Error: {e}")
-
-
-@app.event("app_mention")
-def handle_mentions(body, say):
-    text = body["event"]["text"]
-
-    mention = f"<@{SLACK_BOT_USER_ID}>"
-    text = text.replace(mention, "").strip()
-
-    say("Sure, I'll get right on that!")
-    # response = ask_assistant(text)
-    response = query_bedrock_api(text)
-    say(blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": response}}], text=response)
 
 
 def ack_dm_message(ack):
