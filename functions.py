@@ -1,12 +1,9 @@
 import os
 
-import anthropic
 import requests
 from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
-
-client = anthropic.Anthropic()
 
 
 def query_bedrock_api(query: str) -> str:
@@ -17,16 +14,6 @@ def query_bedrock_api(query: str) -> str:
     if "\n\nResponse: " in raw:
         raw = raw.split("\n\nResponse: ", 1)[1]
     return raw
-
-
-def ask_assistant(user_input: str) -> str:
-    response = client.messages.create(
-        model="claude-haiku-4-5",
-        max_tokens=512,
-        system="You are a concise assistant. Keep your answers short and to the point.",
-        messages=[{"role": "user", "content": user_input}],
-    )
-    return response.content[0].text
 
 
 if __name__ == "__main__":
