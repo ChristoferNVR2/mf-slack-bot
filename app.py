@@ -4,6 +4,8 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_bolt import App
 from dotenv import find_dotenv, load_dotenv
 from flask import Flask, request
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from functions import query_bedrock_api
 
@@ -16,6 +18,25 @@ ALLOWED_USER_IDS = set(os.environ.get("ALLOWED_SLACK_USER_IDS", "").split(","))
 app = App(token=SLACK_BOT_TOKEN)
 flask_app = Flask(__name__)
 handler = SlackRequestHandler(app)
+
+
+def _slack_user_key() -> str:
+    try:
+        body = request.get_json(silent=True, force=True) or {}
+        user_id = body.get("event", {}).get("user")
+        if user_id:
+            return user_id
+    except Exception:
+        pass
+    return get_remote_address()
+
+
+limiter = Limiter(
+    key_func=_slack_user_key,
+    app=flask_app,
+    storage_uri="memory://",
+    strategy="fixed-window",
+)
 
 
 def ack_dm_message(ack):
@@ -54,6 +75,8 @@ app.event("message")(ack=ack_dm_message, lazy=[process_dm_message])
 
 
 @flask_app.route("/slack/events", methods=["POST"])
+@limiter.limit("10 per minute")
+@limiter.limit("100 per minute", key_func=lambda: "global")
 def slack_events():
     return handler.handle(request)
 
