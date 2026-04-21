@@ -11,6 +11,7 @@ load_dotenv(find_dotenv())
 
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
+ALLOWED_USER_IDS = set(os.environ.get("ALLOWED_SLACK_USER_IDS", "").split(","))
 
 app = App(token=SLACK_BOT_TOKEN)
 flask_app = Flask(__name__)
@@ -26,6 +27,11 @@ def process_dm_message(body, client, logger):
     if event.get("channel_type") != "im":
         return
     if event.get("subtype") or event.get("bot_id"):
+        return
+
+    user_id = event.get("user")
+    if ALLOWED_USER_IDS and user_id not in ALLOWED_USER_IDS:
+        # To reply instead: client.chat_postMessage(channel=event["channel"], text="You don't have access to this bot.")
         return
 
     query = event.get("text", "").strip()
